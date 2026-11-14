@@ -602,12 +602,12 @@
     </div>
     <form class="sheet-body" id="book-form" novalidate>
       <div class="field">
-        <label class="label" for="f-title">제목<span class="req">*</span></label>
+        <label class="label" for="f-title">제목<span class="req" aria-hidden="true">*</span></label>
         <input class="input" id="f-title" name="title" type="text" maxlength="200" placeholder="책 제목을 입력하세요" autocomplete="off" autocapitalize="none" data-autofocus>
         <div class="field-error" id="err-title" hidden></div>
       </div>
       <div class="field">
-        <label class="label" for="f-author">저자<span class="opt">선택</span></label>
+        <label class="label" for="f-author">저자<span class="opt" aria-hidden="true">선택</span></label>
         <input class="input" id="f-author" name="author" type="text" maxlength="120" placeholder="저자 이름" autocomplete="off">
       </div>
       <div class="field">
@@ -619,7 +619,7 @@
         <div class="field-error" id="err-date" hidden></div>
       </div>
       <div class="field">
-        <span class="label">별점<span class="opt">0.5점 단위</span></span>
+        <span class="label">별점<span class="opt" aria-hidden="true">0.5점 단위</span></span>
         <div class="rate-wrap">
           <div class="rate-input">
             <div class="rate-stars" aria-hidden="true">
@@ -641,7 +641,7 @@
         <div class="swatches" id="f-colors" role="group" aria-label="표지 색상 선택"></div>
       </div>
       <div class="field">
-        <label class="label" for="f-note">한줄평 · 인상 깊은 문장<span class="opt">선택</span></label>
+        <label class="label" for="f-note">한줄평 · 인상 깊은 문장<span class="opt" aria-hidden="true">선택</span></label>
         <textarea class="textarea" id="f-note" name="note" maxlength="2000" placeholder="기억하고 싶은 문장이나 감상을 적어보세요"></textarea>
         <div class="counter" id="note-counter">0 / 2000</div>
       </div>
