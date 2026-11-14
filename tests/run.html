@@ -21,7 +21,7 @@
   .det{color:#8A8175;font-weight:400;}
   .group{margin:16px 0 6px;font-size:12px;font-weight:800;color:#8A8175;letter-spacing:.4px;}
   iframe{width:390px;height:760px;border:0;position:fixed;right:16px;top:22px;border-radius:22px;
-    box-shadow:0 12px 40px rgba(35,33,29,.18);background:#FAF8F4;}
+    box-shadow:0 12px 40px rgba(35,33,29,.18);background:#F5F5F7;}
   body{max-width:calc(100% - 430px);}
 </style>
 </head>
@@ -90,7 +90,11 @@
     var html = await (await fetch('../index.html', { cache: 'no-store' })).text();
     t.ok(html.length > 10000, 'index.html 크기 확인');
     t.ok(html.indexOf('my_reading_log_v1') >= 0, 'localStorage 키 포함');
-    t.ok(html.indexOf('FAF8F4') >= 0 && html.indexOf('2D5A43') >= 0, '지정 색상(아이보리/포레스트) 사용');
+    t.ok(html.indexOf('F5F5F7') >= 0 && html.indexOf('FF3B6B') >= 0, '지정 색상(라이트 그레이/핑크) 사용');
+    t.ok(/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/.test(html), '3×3 그리드 정의');
+    t.ok(html.indexOf('apple-touch-icon') >= 0 && html.indexOf('sizes="180x180"') >= 0, '180px 홈 화면 아이콘 유지');
+    t.ok(html.indexOf('rel="manifest"') >= 0, 'PWA 매니페스트 유지');
+    t.ok(html.indexOf('<script src="http') < 0 && html.indexOf('<link rel="stylesheet"') < 0, '외부 CDN 의존 없음');
 
     var coreSrc = extractScript(html, 'reading-core');
     var uiSrc = extractScript(html, 'reading-ui');

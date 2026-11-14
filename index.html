@@ -63,21 +63,21 @@
   .topbar-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
   .brand{min-width:0;}
   .brand h1{
-    font-size:25px;font-weight:800;letter-spacing:-1.1px;line-height:1.22;
+    font-size:clamp(21px,6.3vw,25px);font-weight:800;letter-spacing:-1.1px;line-height:1.22;
     display:flex;align-items:center;gap:7px;white-space:nowrap;
   }
-  .brand h1 .emoji{font-size:22px;letter-spacing:0;}
+  .brand h1 .emoji{font-size:.88em;letter-spacing:0;}
   .brand-sub{margin-top:6px;font-size:13.5px;font-weight:600;color:#6E6E73;letter-spacing:-.2px;}
   .topbar-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto;padding-top:1px;}
   .icon-btn{
-    width:40px;height:40px;border-radius:999px;display:grid;place-items:center;
+    width:38px;height:38px;border-radius:999px;display:grid;place-items:center;
     background:#fff;border:1px solid var(--line);color:#6E6E73;
   }
   .icon-btn:active{background:#EDEDF0;}
   .pill-add{
     display:inline-flex;align-items:center;gap:5px;
-    height:52px;padding:0 19px;border-radius:999px;
-    background:var(--ink);color:#fff;font-size:16px;font-weight:800;letter-spacing:-.4px;
+    height:50px;padding:0 17px;border-radius:999px;
+    background:var(--ink);color:#fff;font-size:clamp(14px,4.1vw,16px);font-weight:800;letter-spacing:-.4px;
     box-shadow:0 8px 18px rgba(17,17,17,.22);white-space:nowrap;
   }
   .pill-add:active{background:#000;transform:scale(.98);}
@@ -259,7 +259,7 @@
   }
   .bar-row:active{background:#FAFAFC;}
   .bar-label{
-    flex:0 0 84px;font-size:13.5px;font-weight:700;color:var(--ink-2);letter-spacing:-.3px;
+    flex:0 0 96px;font-size:12.5px;font-weight:700;color:var(--ink-2);letter-spacing:-.4px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;
   }
   .bar-label .pct{color:var(--ink-3);font-weight:700;}
@@ -409,8 +409,9 @@
     background:#F0F0F3;font-size:11.5px;font-weight:800;color:var(--ink-2);letter-spacing:-.2px;
   }
   .detail-date{font-size:12px;color:var(--ink-3);font-weight:700;font-variant-numeric:tabular-nums;}
-  .detail-stars{margin-top:10px;display:flex;align-items:center;gap:7px;}
+  .detail-stars{margin-top:10px;display:flex;align-items:center;gap:9px;}
   .stars{position:relative;display:inline-block;font-size:14px;line-height:1;letter-spacing:1px;color:#E4E4E9;}
+  .stars-fill{letter-spacing:1px;}
   .stars-base,.stars-fill{display:block;white-space:nowrap;letter-spacing:1px;}
   .stars-fill{position:absolute;left:0;top:0;overflow:hidden;color:var(--ink);}
   .stars-sm{font-size:12.5px;}
@@ -466,9 +467,9 @@
   .month-thumb{flex:0 0 auto;width:38px;height:57px;border-radius:6px;overflow:hidden;position:relative;background:#E4E4E9;box-shadow:0 2px 6px rgba(17,17,17,.14);}
   .month-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
   .month-thumb .cover-fallback{font-size:8px;padding:3px;}
-  .month-main{flex:1 1 auto;min-width:0;}
-  .month-title{font-size:14px;font-weight:800;letter-spacing:-.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .month-sub{font-size:11.5px;color:var(--ink-3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .month-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .month-title{display:block;font-size:14px;font-weight:800;letter-spacing:-.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .month-sub{display:block;font-size:11.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .month-fav{flex:0 0 auto;font-size:14px;}
 
   .toast{
@@ -520,7 +521,7 @@
       <span class="list-count" id="lib-count"></span>
       <button class="sort-btn" id="sort-toggle" type="button" aria-pressed="false">완독 최신순 <span class="arrow" aria-hidden="true">↓</span></button>
     </div>
-    <section id="lib-grid" class="cover-grid" aria-live="polite"></section>
+    <section id="lib-grid" class="cover-grid"></section>
   </main>
 
   <main class="content view" id="view-stats" role="tabpanel" aria-labelledby="seg-stats" hidden>
@@ -1448,7 +1449,9 @@
         '</button>';
       }).join('');
       foot.hidden = false;
-      foot.innerHTML = '<span>가장 많은 달 ' + C.formatMonthKey(agg.byMonth[0].key) + '</span><span>합계 ' + agg.total + '권</span>';
+      var best = agg.byMonth[0];
+      agg.byMonth.forEach(function (row) { if (row.count > best.count) best = row; });
+      foot.innerHTML = '<span>가장 많은 달 ' + C.formatMonthKey(best.key) + '</span><span>합계 ' + agg.total + '권</span>';
     }
     $('month-note').textContent = agg.byMonth.length ? '막대를 누르면 책 목록' : '기록 없음';
 
@@ -1578,6 +1581,10 @@
   }
 
   function submitBook() {
+    var typedUrl = $('cover-url').value.trim();
+    if (typedUrl && state.formCover.kind === 'none' && C.safeImageSrc(typedUrl)) {
+      state.formCover = { kind: 'url', src: typedUrl };
+    }
     var payload = {
       id: state.editingId || '',
       title: $('f-title').value,
@@ -1639,7 +1646,7 @@
       state.filter = 'all';
       state.q = '';
       renderAll();
-      toast('「' + book.title + '」을(를) 서재에 담았어요.');
+      toast('「' + book.title + '」 서재에 담았어요.');
     }
   }
 
@@ -1685,7 +1692,55 @@
     reader.readAsDataURL(file);
   }
 
-  /* 표지 검색 (Google Books, 온라인일 때만) */
+  /* 표지 검색 (Google Books → Open Library, 온라인일 때만) */
+  function fetchJson(url) {
+    return fetch(url, { cache: 'no-store' }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    });
+  }
+
+  function searchGoogleBooks(title) {
+    var url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent('intitle:' + title) +
+      '&maxResults=8&printType=books&country=US';
+    return fetchJson(url).then(function (data) {
+      var out = [];
+      ((data && data.items) || []).forEach(function (it) {
+        var links = it && it.volumeInfo && it.volumeInfo.imageLinks;
+        var src = links && (links.thumbnail || links.smallThumbnail);
+        if (!src) return;
+        src = String(src).replace(/^http:/, 'https:').replace(/&zoom=\d/, '&zoom=2');
+        if (!C.safeImageSrc(src)) return;
+        out.push({ src: src, title: (it.volumeInfo && it.volumeInfo.title) || '' });
+      });
+      return out;
+    });
+  }
+
+  function searchOpenLibrary(title) {
+    var url = 'https://openlibrary.org/search.json?title=' + encodeURIComponent(title) +
+      '&limit=8&fields=title,cover_i';
+    return fetchJson(url).then(function (data) {
+      var out = [];
+      ((data && data.docs) || []).forEach(function (d) {
+        if (!d || !d.cover_i) return;
+        out.push({ src: 'https://covers.openlibrary.org/b/id/' + d.cover_i + '-L.jpg', title: d.title || '' });
+      });
+      return out;
+    });
+  }
+
+  function renderCoverResults(found) {
+    var box = $('cover-results');
+    box.innerHTML = found.map(function (f) {
+      var on = state.formCover.kind === 'url' && state.formCover.src === f.src;
+      return '<button class="cover-result' + (on ? ' is-active' : '') + '" type="button" data-cover-url="' + esc(f.src) + '" aria-label="' + esc(f.title || '표지') + ' 선택">' +
+        '<img src="' + esc(f.src) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' +
+      '</button>';
+    }).join('');
+    box.hidden = false;
+  }
+
   function searchCovers() {
     var title = $('f-title').value.trim();
     var box = $('cover-results');
@@ -1705,25 +1760,15 @@
     status.textContent = '표지를 찾는 중...';
     box.hidden = false;
     box.innerHTML = '';
-    var url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent('intitle:' + title) +
-      '&maxResults=8&printType=books&country=US';
-    fetch(url, { cache: 'no-store' })
-      .then(function (res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
+    searchGoogleBooks(title)
+      .catch(function () { return []; })
+      .then(function (list) {
+        if (list.length) return list;
+        return searchOpenLibrary(title).catch(function () { return []; });
       })
-      .then(function (data) {
-        var items = (data && data.items) || [];
-        var found = [];
-        items.forEach(function (it) {
-          var links = it && it.volumeInfo && it.volumeInfo.imageLinks;
-          var src = links && (links.thumbnail || links.smallThumbnail);
-          if (!src) return;
-          src = String(src).replace(/^http:/, 'https:').replace(/&zoom=\d/, '&zoom=2');
-          if (!C.safeImageSrc(src)) return;
-          found.push({ src: src, title: (it.volumeInfo && it.volumeInfo.title) || '' });
-        });
-        if (!found.length) {
+      .then(function (list) {
+        if (currentSheet !== 'sheet-book') return;
+        if (!list.length) {
           status.className = 'cover-status error';
           status.textContent = '표지를 찾지 못했어요. 이미지 주소를 붙여넣거나 앨범에서 골라 주세요.';
           box.hidden = true;
@@ -1731,14 +1776,10 @@
         }
         status.className = 'cover-status';
         status.textContent = '마음에 드는 표지를 눌러 주세요.';
-        box.innerHTML = found.map(function (f) {
-          var on = state.formCover.kind === 'url' && state.formCover.src === f.src;
-          return '<button class="cover-result' + (on ? ' is-active' : '') + '" type="button" data-cover-url="' + esc(f.src) + '" aria-label="' + esc(f.title || '표지') + ' 선택">' +
-            '<img src="' + esc(f.src) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' +
-          '</button>';
-        }).join('');
+        renderCoverResults(list);
       })
       .catch(function () {
+        if (currentSheet !== 'sheet-book') return;
         status.className = 'cover-status error';
         status.textContent = '표지 검색에 연결하지 못했어요. 온라인 상태를 확인하거나 이미지 주소·앨범 사진을 사용해 주세요.';
         box.hidden = true;
@@ -2155,7 +2196,7 @@
         state.formCover = { kind: 'image', src: dataUrl };
         syncFormVisuals();
         status.className = 'cover-status';
-        status.textContent = '표지 사진을 ' + w + '×' + h + ' 크기로 줄여 담았어요.';
+        status.textContent = '표지 사진을 ' + w + '×' + h + ' 크기로 담았어요.';
         $('cover-results').hidden = true;
       });
     });

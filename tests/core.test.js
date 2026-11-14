@@ -1,184 +1,145 @@
-/* 나의 서재 — 핵심 로직 테스트 (DOM 비의존) */
+/* 나만의 서재 — 핵심 로직 테스트 (DOM 비의존) */
 window.runCoreTests = function (C, t) {
   'use strict';
 
+  var NOW = new Date(2026, 10, 14, 10, 0, 0); // 2026-11-14
+
   /* ── 상수 ── */
   t.eq(C.STORAGE_KEY, 'my_reading_log_v1', 'localStorage 키 = my_reading_log_v1');
-  t.eq(C.CATEGORIES.length, 7, '분야 7종');
-  t.eq(C.CATEGORIES.join(','), '소설,에세이,인문/사회,경제/경영,자기계발,과학/IT,기타', '분야 목록 일치');
+  t.eq(C.CATEGORIES.length, 7, '카테고리 7종');
+  t.eq(C.CATEGORIES.join(','), '소설,인문,에세이,경제/경영,자기계발,과학/IT,기타', '카테고리 목록 일치');
   t.ok(C.COLORS.length >= 6, '표지 색상 팔레트 6종 이상');
+  t.eq(C.MAX_NOTE, 2000, '메모 최대 2000자');
 
-  /* ── XSS 이스케이프 ── */
-  t.eq(C.escapeHtml('<script>alert(1)</script>'),
-    '&lt;script&gt;alert(1)&lt;/script&gt;', 'escapeHtml: 태그 무력화');
+  /* ── XSS / 텍스트 ── */
+  t.eq(C.escapeHtml('<script>alert(1)</script>'), '&lt;script&gt;alert(1)&lt;/script&gt;', 'escapeHtml: 태그 무력화');
   t.eq(C.escapeHtml('"a" & \'b\''), '&quot;a&quot; &amp; &#39;b&#39;', 'escapeHtml: 따옴표·앰퍼샌드');
   t.eq(C.escapeHtml(null), '', 'escapeHtml: null → 빈 문자열');
   t.eq(C.text('  제목  ', 10), '제목', 'text(): 앞뒤 공백 제거');
   t.eq(C.text('가나다라', 3), '가나', 'text(): 길이 제한');
 
-  /* ── 날짜 ── */
+  /* ── 이미지 주소 검증 ── */
+  t.eq(C.safeImageSrc('https://covers.openlibrary.org/b/id/1-L.jpg'),
+    'https://covers.openlibrary.org/b/id/1-L.jpg', 'safeImageSrc: https 허용');
+  t.eq(C.safeImageSrc('data:image/jpeg;base64,AAAA'), 'data:image/jpeg;base64,AAAA', 'safeImageSrc: data:image 허용');
+  t.eq(C.safeImageSrc('javascript:alert(1)'), '', 'safeImageSrc: javascript: 거부');
+  t.eq(C.safeImageSrc('data:text/html;base64,AAAA'), '', 'safeImageSrc: data:text 거부');
+  t.eq(C.safeImageSrc('  '), '', 'safeImageSrc: 빈 값 거부');
+  t.eq(C.normalizeCover({ kind: 'url', src: 'javascript:alert(1)' }).kind, 'none', 'normalizeCover: 위험한 주소는 색상 표지로');
+  t.eq(C.normalizeCover({ kind: 'image', src: 'data:image/png;base64,AAAA' }).kind, 'image', 'normalizeCover: 압축 사진 유지');
+
+  /* ── 날짜 · 월 배지 ── */
   t.ok(C.isIsoDate('2026-11-14'), 'isIsoDate: 정상 날짜');
   t.ok(C.isIsoDate('2024-02-29'), 'isIsoDate: 윤년 2월 29일');
   t.ok(!C.isIsoDate('2023-02-29'), 'isIsoDate: 평년 2월 29일 거부');
   t.ok(!C.isIsoDate('2026-13-01'), 'isIsoDate: 13월 거부');
-  t.ok(!C.isIsoDate('2026-1-1'), 'isIsoDate: 자릿수 부족 거부');
-  t.ok(!C.isIsoDate(''), 'isIsoDate: 빈 값 거부');
   t.eq(C.formatDate('2026-11-14'), '2026.11.14', 'formatDate: YYYY.MM.DD');
   t.eq(C.formatDate(''), '완독일 미기록', 'formatDate: 날짜 없음');
-  t.eq(C.yearOf('2026-11-14'), 2026, 'yearOf');
-  t.eq(C.monthOf('2026-11-14'), 11, 'monthOf');
-  t.eq(C.todayIso(new Date(2026, 0, 5)), '2026-01-05', 'todayIso: 0 채움');
+  t.eq(C.monthBadge('2026-11-14'), '26-11', 'monthBadge: YY-MM');
+  t.eq(C.monthBadge('2025-01-02'), '25-01', 'monthBadge: 1월도 두 자리');
+  t.eq(C.monthBadge(''), '', 'monthBadge: 날짜 없음 → 빈 값');
+  t.eq(C.monthKey('2026-11-14'), '2026-11', 'monthKey: YYYY-MM');
+  t.eq(C.formatMonthKey('2026-11'), '2026년 11월', 'formatMonthKey: 한국어 표기');
+  t.eq(C.todayIso(NOW), '2026-11-14', 'todayIso: 0 채움');
 
   /* ── 별점 ── */
-  t.eq(C.clampRating(3.7), 3.5, 'clampRating: 0.5 단위 반올림');
-  t.eq(C.clampRating(4.8), 5, 'clampRating: 최대 5');
+  t.eq(C.clampRating(4.3), 4.5, 'clampRating: 0.5 단위 반올림');
+  t.eq(C.clampRating(9), 5, 'clampRating: 최대 5');
   t.eq(C.clampRating(-2), 0, 'clampRating: 최소 0');
-  t.eq(C.clampRating('abc'), 0, 'clampRating: 숫자 아님 → 0');
-  t.eq(C.formatRating(4), '4.0', 'formatRating: 한 자리 소수');
+  t.eq(C.formatRating(4.5), '4.5', 'formatRating: 소수 한 자리');
 
-  /* ── 유효성 검사 ── */
-  var v1 = C.validateBook({ title: '   ' });
-  t.ok(!v1.ok, 'validateBook: 빈 제목 거부');
-  t.ok(!!v1.errors.title, 'validateBook: 제목 오류 메시지');
+  /* ── 책 정규화 · 옛 데이터 호환 ── */
+  var legacy = C.normalizeBook({
+    id: 'old-1', title: '옛 기록', author: '작가', date: '2025-03-02',
+    category: '인문/사회', color: 'navy', rating: 4, note: '메모', sample: true
+  });
+  t.eq(legacy.completedAt, '2025-03-02', '옛 date → completedAt');
+  t.eq(legacy.category, '인문', "옛 '인문/사회' → '인문'");
+  t.eq(legacy.favorite, false, '인생책 기본값 false');
+  t.eq(legacy.color, 'navy', '표지 색상 유지');
+  t.eq(C.normalizeBook({ title: '하트', heart: true }).favorite, true, '옛 heart 필드 → favorite');
+  t.eq(C.normalizeBook({ title: '기본' }).category, '기타', '카테고리 미지정 → 기타');
+  t.ok(!!C.normalizeBook({}).id, 'id 없으면 새로 발급');
 
-  var v2 = C.validateBook({ title: '  채식주의자 ', author: ' 한강 ', date: '2026-01-02', rating: 4.5, category: '소설', color: 'forest', note: '  좋다 ' });
-  t.ok(v2.ok, 'validateBook: 정상 입력 통과');
-  t.eq(v2.value.title, '채식주의자', 'validateBook: 제목 trim');
-  t.eq(v2.value.author, '한강', 'validateBook: 저자 trim');
-  t.eq(v2.value.rating, 4.5, 'validateBook: 별점 유지');
-  t.eq(v2.value.note, '좋다', 'validateBook: 메모 trim');
+  /* ── 입력 검증 ── */
+  t.eq(C.validateBook({ title: '' }).errors.title, '제목을 입력해 주세요.', 'validateBook: 제목 필수');
+  t.ok(C.validateBook({ title: '책', completedAt: '2026-2-3' }).errors.date, 'validateBook: 잘못된 날짜');
+  var okBook = C.validateBook({ title: ' 책 ', completedAt: '2026-11-14', rating: 4.3, cover: { kind: 'url', src: 'http://x/y.jpg' } });
+  t.ok(okBook.ok, 'validateBook: 정상 입력 통과');
+  t.eq(okBook.value.title, '책', 'validateBook: 제목 공백 정리');
+  t.eq(okBook.value.rating, 4.5, 'validateBook: 별점 보정');
+  t.eq(okBook.value.cover.kind, 'url', 'validateBook: http 표지 허용');
 
-  var v3 = C.validateBook({ title: '책', date: '2026-02-30' });
-  t.ok(!v3.ok && !!v3.errors.date, 'validateBook: 잘못된 완독일 거부');
+  /* ── 정렬 (완독일 최신순 기본) ── */
+  var a = C.normalizeBook({ id: 'a', title: '가', completedAt: '2026-01-05' });
+  var b = C.normalizeBook({ id: 'b', title: '나', completedAt: '2026-11-01' });
+  var c = C.normalizeBook({ id: 'c', title: '다', completedAt: '2026-05-20' });
+  var d = C.normalizeBook({ id: 'd', title: '라', completedAt: '' });
+  var sorted = C.sortBooks([a, b, c, d]);
+  t.eq(sorted.map(function (x) { return x.id; }).join(''), 'bca', 'sortBooks: 완독일 최신순');
+  t.eq(sorted[3].id, 'd', 'sortBooks: 완독일 없는 책은 맨 뒤');
+  var asc = C.sortBooks([a, b, c, d], 'asc');
+  t.eq(asc.map(function (x) { return x.id; }).join(''), 'acb', 'sortBooks: 오래된순');
+  t.eq(asc[3].id, 'd', 'sortBooks: 오래된순에서도 날짜 없는 책은 뒤');
+  t.ok(C.compareBooks(b, a) < 0, 'compareBooks: 최신이 앞');
 
-  var v4 = C.validateBook({ title: '책', category: '없는분야', color: '없는색' });
-  t.ok(v4.ok, 'validateBook: 알 수 없는 분야/색이어도 통과');
-  t.eq(v4.value.category, '기타', 'validateBook: 알 수 없는 분야 → 기타');
-  t.eq(v4.value.color, C.DEFAULT_COLOR, 'validateBook: 알 수 없는 색 → 기본색');
-
-  /* ── 정규화 ── */
-  var n1 = C.normalizeBook({ title: 'A', rating: 9 });
-  t.eq(n1.rating, 5, 'normalizeBook: 별점 상한');
-  t.ok(/^b/.test(n1.id), 'normalizeBook: id 자동 생성');
-  t.ok(typeof C.normalizeBook({ title: 'B' }).id === 'string', 'normalizeBook: id는 항상 존재');
-  t.eq(C.normalizeBook({ title: 'B' }).sample, false, 'normalizeBook: sample 기본 false');
-  t.eq(C.normalizeBook({ title: 'B', date: 'x' }).date, '', 'normalizeBook: 잘못된 날짜는 빈 값');
-
-  /* ── 필터/검색 ── */
-  var books = [
-    { id: '1', title: '한강 소설', author: '한강', date: '2026-02-01', category: '소설', color: 'forest', rating: 4.5, note: '이별 이야기' },
-    { id: '2', title: '경제 책', author: '홍길동', date: '2025-12-31', category: '경제/경영', color: 'navy', rating: 3, note: '' },
-    { id: '3', title: '메모 책', author: '', date: '', category: '기타', color: 'stone', rating: 0, note: '좋은 문장' }
+  /* ── 필터 ── */
+  var lib = [
+    C.normalizeBook({ id: '1', title: '사피엔스', author: '유발 하라리', completedAt: '2026-11-14', category: '인문', favorite: true, note: '인류 역사' }),
+    C.normalizeBook({ id: '2', title: '작별하지 않는다', author: '한강', completedAt: '2026-11-02', category: '소설', favorite: true }),
+    C.normalizeBook({ id: '3', title: '총, 균, 쇠', author: '재레드 다이아몬드', completedAt: '2026-08-30', category: '인문' })
   ];
+  t.eq(C.filterBooks(lib, {}).length, 3, 'filterBooks: 기본 전체');
+  t.eq(C.filterBooks(lib, { filter: 'fav' }).length, 2, 'filterBooks: 하트만');
+  t.eq(C.filterBooks(lib, { filter: '인문' }).length, 2, 'filterBooks: 카테고리');
+  t.eq(C.filterBooks(lib, { q: '한강' }).length, 1, 'filterBooks: 저자 검색');
+  t.eq(C.filterBooks(lib, { q: '인류' }).length, 1, 'filterBooks: 한 줄 평 검색');
+  t.eq(C.filterBooks(lib, { q: '없는책' }).length, 0, 'filterBooks: 결과 없음');
+  t.eq(C.filterBooks(lib, { filter: '소설', q: '사피' }).length, 0, 'filterBooks: 필터+검색 교집합');
+  t.eq(C.countByFilter(lib, 'all'), 3, 'countByFilter: 전체');
+  t.eq(C.countByFilter(lib, 'fav'), 2, 'countByFilter: 하트만');
 
-  t.eq(C.filterBooks(books, {}).length, 3, 'filterBooks: 조건 없음 → 전체');
-  t.eq(C.filterBooks(books, { q: '한강' }).map(function (b) { return b.id; }).join(','), '1', 'filterBooks: 제목/저자 검색');
-  t.eq(C.filterBooks(books, { q: '이별' }).length, 1, 'filterBooks: 메모 검색');
-  t.eq(C.filterBooks(books, { q: '한강 이별' }).length, 1, 'filterBooks: 다중 키워드 AND');
-  t.eq(C.filterBooks(books, { q: '없는말' }).length, 0, 'filterBooks: 결과 없음');
-  t.eq(C.filterBooks(books, { year: 2026 }).length, 1, 'filterBooks: 연도 필터');
-  t.eq(C.filterBooks(books, { year: '2025' }).length, 1, 'filterBooks: 연도 필터(문자열)');
-  t.eq(C.filterBooks(books, { year: 'all' }).length, 3, 'filterBooks: 전체 연도');
-  t.eq(C.filterBooks(books, { category: '소설' }).length, 1, 'filterBooks: 분야 필터');
-  t.eq(C.filterBooks(books, { q: '소설' }).length, 1, 'filterBooks: 분야명 검색');
-  t.eq(C.filterBooks(books, {}).map(function (b) { return b.id; }).join(','), '1,2,3', 'filterBooks: 완독일 내림차순, 날짜 없음은 마지막');
-  t.eq(C.filterBooks(books, { year: 2026, category: '소설', q: '한강' }).length, 1, 'filterBooks: 복합 조건');
+  /* ── 통계 ── */
+  var agg = C.aggregate(lib, NOW);
+  t.eq(agg.total, 3, 'aggregate: 총 완독');
+  t.eq(agg.favoriteCount, 2, 'aggregate: 인생책 수');
+  t.eq(agg.thisMonth, 2, 'aggregate: 이번 달 완독');
+  t.eq(agg.byMonth.length, 2, 'aggregate: 완독한 달 수');
+  t.eq(agg.byMonth[0].key, '2026-11', 'aggregate: 최근 달이 먼저');
+  t.eq(agg.byMonth[0].count, 2, 'aggregate: 11월 2권');
+  t.eq(agg.byMonth[1].key, '2026-08', 'aggregate: 그다음 달');
+  t.eq(agg.maxMonthCount, 2, 'aggregate: 최다 월 권수');
+  t.eq(agg.byCategory[0].category, '인문', 'aggregate: 카테고리 1위');
+  t.eq(agg.byCategory[0].count, 2, 'aggregate: 인문 2권');
+  t.eq(agg.byCategory[0].pct, 66.7, 'aggregate: 비율 계산');
+  t.eq(C.aggregate([], NOW).total, 0, 'aggregate: 빈 서재');
 
-  /* ── 집계 ── */
-  var aggBooks = [
-    { id: 'a', title: 'A', date: '2026-01-05', category: '소설', rating: 5 },
-    { id: 'b', title: 'B', date: '2026-01-20', category: '소설', rating: 4 },
-    { id: 'c', title: 'C', date: '2026-03-02', category: '에세이', rating: 0 },
-    { id: 'd', title: 'D', date: '2025-03-02', category: '소설', rating: 3 }
-  ];
-  var agg = C.aggregate(aggBooks, 2026);
-  t.eq(agg.total, 3, 'aggregate: 연도 총 권수');
-  t.eq(agg.byMonth.length, 12, 'aggregate: 12개월');
-  t.eq(agg.byMonth[0].count, 2, 'aggregate: 1월 2권');
-  t.eq(agg.byMonth[1].count, 0, 'aggregate: 2월 0권');
-  t.eq(agg.byMonth[2].count, 1, 'aggregate: 3월 1권');
-  t.eq(agg.byMonth[0].books.length, 2, 'aggregate: 월별 책 목록');
-  t.eq(agg.avgRating, 4.5, 'aggregate: 평균 별점(별점 있는 책만)');
-  t.eq(agg.ratedCount, 2, 'aggregate: 별점 있는 책 수');
-  t.eq(agg.monthlyAvg, 0.3, 'aggregate: 월 평균(총권/12)');
-  t.eq(agg.activeMonths, 2, 'aggregate: 기록 있는 달 수');
-  t.eq(agg.bestMonth, 1, 'aggregate: 최다 월');
-  t.eq(agg.bestMonthCount, 2, 'aggregate: 최다 월 권수');
-  t.eq(agg.byCategory[0].category, '소설', 'aggregate: 분야 정렬');
-  t.eq(agg.byCategory[0].count, 2, 'aggregate: 분야 권수');
-  t.eq(agg.byCategory[0].pct, 66.7, 'aggregate: 분야 비율');
-  t.eq(agg.byCategory[1].pct, 33.3, 'aggregate: 분야 비율2');
-  var aggEmpty = C.aggregate([], 2026);
-  t.eq(aggEmpty.total, 0, 'aggregate: 빈 해 총 0');
-  t.eq(aggEmpty.avgRating, 0, 'aggregate: 빈 해 평균 별점 0');
-  t.eq(aggEmpty.bestMonth, 0, 'aggregate: 빈 해 최다 월 없음');
-
-  t.eq(C.availableYears(aggBooks).join(','), '2026,2025', 'availableYears: 내림차순');
-  t.eq(C.availableYears([]).length, 0, 'availableYears: 빈 목록');
-
-  /* ── 목표 달성률 ── */
-  var p = C.progress(5, 10);
-  t.eq(p.pct, 50, 'progress');
-  t.eq(p.barPct, 50, 'progress: 바 %');
-  t.eq(p.remaining, 5, 'progress: 남은 권수');
-  var p2 = C.progress(15, 10);
-  t.eq(p2.pct, 150, 'progress: 100% 초과 표시');
-  t.eq(p2.barPct, 100, 'progress: 바는 100%에서 멈춤');
-  t.eq(p2.remaining, 0, 'progress: 남은 권수 0');
-  var p3 = C.progress(3, 0);
-  t.ok(!p3.hasGoal, 'progress: 목표 미설정');
-  t.eq(p3.pct, 0, 'progress: 목표 없으면 0%');
-  t.eq(C.normalizeGoals({ '2026': { annual: '24', monthly: 2 }, 'bad': { annual: 3 } })['2026'].annual, 24, 'normalizeGoals: 문자열 숫자 변환');
-  t.eq(Object.keys(C.normalizeGoals({ bad: { annual: 3 } })).length, 0, 'normalizeGoals: 잘못된 연도 제외');
-
-  /* ── 백업 파싱 ── */
-  var bad1 = C.parseBackup('');
-  t.ok(!bad1.ok, 'parseBackup: 빈 문자열 거부');
-  var bad2 = C.parseBackup('{not json');
-  t.ok(!bad2.ok && bad2.error.indexOf('JSON') >= 0, 'parseBackup: 깨진 JSON 거부');
-  var bad3 = C.parseBackup('{"foo":1}');
-  t.ok(!bad3.ok, 'parseBackup: books 없는 객체 거부');
-
-  var ok1 = C.parseBackup('{"books":[{"title":"A"},{"title":"B"}]}');
-  t.ok(ok1.ok && ok1.books.length === 2, 'parseBackup: 객체 형식');
-  var ok2 = C.parseBackup('[{"title":"A"}, {"title":"B"}]');
-  t.ok(ok2.ok && ok2.books.length === 2, 'parseBackup: 배열 형식');
-  var skip = C.parseBackup('{"books":[{"title":"A"}, {"nope":1}, "x", null, {"title":"  "}]}');
-  t.eq(skip.books.length, 1, 'parseBackup: 제목 없는 항목 제외');
-  t.eq(skip.skipped, 4, 'parseBackup: 제외 건수');
-  var dup = C.parseBackup('{"books":[{"id":"same","title":"A"},{"id":"same","title":"B"}]}');
+  /* ── 백업 ── */
+  t.ok(!C.parseBackup('').ok, 'parseBackup: 빈 문자열 거부');
+  t.ok(!C.parseBackup('{oops').ok, 'parseBackup: 깨진 JSON 거부');
+  t.ok(!C.parseBackup('{"foo":1}').ok, 'parseBackup: books 없는 객체 거부');
+  var parsed = C.parseBackup(JSON.stringify({ books: [
+    { title: '옛 책', date: '2025-02-01', category: '인문/사회' },
+    { title: '' },
+    'text'
+  ] }));
+  t.ok(parsed.ok, 'parseBackup: books 배열 인식');
+  t.eq(parsed.books.length, 1, 'parseBackup: 잘못된 항목 제외');
+  t.eq(parsed.skipped, 2, 'parseBackup: 제외 건수');
+  t.eq(parsed.books[0].completedAt, '2025-02-01', 'parseBackup: 옛 date 변환');
+  var dup = C.parseBackup(JSON.stringify({ books: [{ id: 'x', title: 'A' }, { id: 'x', title: 'B' }] }));
   t.ok(dup.books[0].id !== dup.books[1].id, 'parseBackup: 중복 id 재발급');
-  var g = C.parseBackup('{"books":[{"title":"A"}],"goals":{"2026":{"annual":24,"monthly":2}}}');
-  t.eq(g.goals['2026'].annual, 24, 'parseBackup: 목표 복원');
-
-  /* ── 직렬화 왕복 ── */
-  var payload = C.buildPayload(aggBooks, { '2026': { annual: 10, monthly: 1 } });
+  var payload = C.buildPayload(lib, { 2026: { annual: 12 } }, NOW);
+  t.eq(payload.version, C.SCHEMA_VERSION, 'buildPayload: 스키마 버전');
+  t.eq(payload.books.length, 3, 'buildPayload: 책 수');
+  t.eq(payload.exportedAt, NOW.toISOString(), 'buildPayload: 내보낸 시각');
+  t.ok(C.serialize(payload).indexOf('"favorite": true') > -1, 'serialize: 인생책 포함');
   var round = C.parseBackup(C.serialize(payload));
-  t.ok(round.ok, '직렬화 → 파싱 성공');
-  t.eq(round.books.length, 4, '직렬화 왕복: 권수 유지');
-  t.eq(round.books[0].title, 'A', '직렬화 왕복: 내용 유지');
-  t.eq(round.goals['2026'].annual, 10, '직렬화 왕복: 목표 유지');
-  t.ok(C.serialize(payload).indexOf('\n  ') > 0, '직렬화: 읽기 좋은 JSON');
-
-  /* ── 표지 색상 ── */
-  t.eq(C.shadeHex('#FFFFFF', -0.5), '#808080', 'shadeHex: 어둡게');
-  t.eq(C.shadeHex('#000000', 0.5), '#808080', 'shadeHex: 밝게');
-  t.ok(C.coverStyle('forest').indexOf('linear-gradient') >= 0, 'coverStyle: 그라데이션');
-  t.ok(C.coverStyle('forest').indexOf('#2D5A43') >= 0, 'coverStyle: 포레스트 그린');
-  t.eq(C.colorLabel('forest'), '포레스트', 'colorLabel');
+  t.ok(round.ok && round.books.length === 3, 'serialize → parseBackup 왕복');
 
   /* ── 예시 데이터 ── */
-  var samples = C.sampleBooks(new Date(2026, 10, 14));
+  var samples = C.sampleBooks(NOW);
   t.eq(samples.length, 3, 'sampleBooks: 3권');
-  t.ok(samples.every(function (b) { return b.title && C.isIsoDate(b.date) && b.rating > 0 && b.sample; }), 'sampleBooks: 필수 필드 채움');
-  t.ok(samples.every(function (b) { return C.yearOf(b.date) === 2026; }), 'sampleBooks: 올해 날짜');
-  t.ok(samples.every(function (b) { return C.isCategory(b.category); }), 'sampleBooks: 3권 모두 분야 지정');
-
-  /* ── 정렬 ── */
-  var sorted = C.sortBooks([
-    { title: 'B', date: '2026-01-01' },
-    { title: 'A', date: '2026-05-01' },
-    { title: 'C', date: '' }
-  ]);
-  t.eq(sorted.map(function (b) { return b.title; }).join(''), 'ABC', 'sortBooks: 날짜 내림차순 + 날짜 없음 마지막');
+  t.ok(samples.every(function (s) { return !!s.title && s.sample === true; }), 'sampleBooks: 제목·표시');
+  t.ok(samples.every(function (s) { return C.isIsoDate(s.completedAt); }), 'sampleBooks: 완독일 유효');
 };
