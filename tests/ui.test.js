@@ -21,18 +21,34 @@ window.runUiTests = async function (frame, t, sleep) {
   }
   function badgeOf(iso) { return iso.slice(2, 4) + '-' + iso.slice(5, 7); }
 
+  async function waitApp(timeout) {
+    var t0 = Date.now();
+    while (Date.now() - t0 < (timeout || 10000)) {
+      try {
+        var d = frame.contentDocument;
+        if (d && d.readyState === 'complete' && d.querySelector('.pill-add') &&
+            d.querySelector('#lib-grid') && d.querySelector('#lib-grid').children.length) {
+          return true;
+        }
+      } catch (e) {}
+      await sleep(120);
+    }
+    return false;
+  }
+
   async function reload() {
     try { W().localStorage.removeItem(KEY); } catch (e) {}
-    await new Promise(function (resolve) {
-      var done = false;
-      function fin() { if (!done) { done = true; resolve(); } }
-      frame.addEventListener('load', fin);
-      try { W().location.reload(); } catch (e) { frame.src = '../index.html'; }
-      setTimeout(fin, 2500);
-    });
-    await sleep(250);
+    var loaded = false;
+    function onLoad() { loaded = true; }
+    frame.addEventListener('load', onLoad);
+    try { W().location.reload(); } catch (e) { frame.src = '../index.html'; }
+    var t0 = Date.now();
+    while (!loaded && Date.now() - t0 < 10000) { await sleep(100); }
+    frame.removeEventListener('load', onLoad);
+    await waitApp(10000);
     W().confirm = function () { return true; };
     W().alert = function () {};
+    await sleep(150);
   }
 
   async function openAdd() {

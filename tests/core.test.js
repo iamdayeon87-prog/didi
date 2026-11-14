@@ -16,7 +16,7 @@ window.runCoreTests = function (C, t) {
   t.eq(C.escapeHtml('"a" & \'b\''), '&quot;a&quot; &amp; &#39;b&#39;', 'escapeHtml: 따옴표·앰퍼샌드');
   t.eq(C.escapeHtml(null), '', 'escapeHtml: null → 빈 문자열');
   t.eq(C.text('  제목  ', 10), '제목', 'text(): 앞뒤 공백 제거');
-  t.eq(C.text('가나다라', 3), '가나', 'text(): 길이 제한');
+  t.eq(C.text('가나다라', 3), '가나다', 'text(): 길이 제한');
 
   /* ── 이미지 주소 검증 ── */
   t.eq(C.safeImageSrc('https://covers.openlibrary.org/b/id/1-L.jpg'),
@@ -76,10 +76,10 @@ window.runCoreTests = function (C, t) {
   var c = C.normalizeBook({ id: 'c', title: '다', completedAt: '2026-05-20' });
   var d = C.normalizeBook({ id: 'd', title: '라', completedAt: '' });
   var sorted = C.sortBooks([a, b, c, d]);
-  t.eq(sorted.map(function (x) { return x.id; }).join(''), 'bca', 'sortBooks: 완독일 최신순');
+  t.eq(sorted.map(function (x) { return x.id; }).join(''), 'bcad', 'sortBooks: 완독일 최신순');
   t.eq(sorted[3].id, 'd', 'sortBooks: 완독일 없는 책은 맨 뒤');
   var asc = C.sortBooks([a, b, c, d], 'asc');
-  t.eq(asc.map(function (x) { return x.id; }).join(''), 'acb', 'sortBooks: 오래된순');
+  t.eq(asc.map(function (x) { return x.id; }).join(''), 'acbd', 'sortBooks: 오래된순');
   t.eq(asc[3].id, 'd', 'sortBooks: 오래된순에서도 날짜 없는 책은 뒤');
   t.ok(C.compareBooks(b, a) < 0, 'compareBooks: 최신이 앞');
 
