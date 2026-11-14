@@ -1,4 +1,4 @@
-/* 나만의 서재 — 핵심 로직 테스트 (DOM 비의존) */
+/* 독서 기록 — 핵심 로직 테스트 (DOM 비의존) */
 window.runCoreTests = function (C, t) {
   'use strict';
 

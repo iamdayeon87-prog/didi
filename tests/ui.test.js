@@ -1,4 +1,4 @@
-/* 나만의 서재 — 화면 동작 테스트 (iframe 안의 실제 앱을 조작) */
+/* 독서 기록 — 화면 동작 테스트 (iframe 안의 실제 앱을 조작) */
 window.runUiTests = async function (frame, t, sleep) {
   'use strict';
 

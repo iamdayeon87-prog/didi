@@ -1,4 +1,4 @@
-# 나만의 서재 (My Reading Log)
+# 독서 기록 (My Reading Log)
 
 읽은 책을 **표지 그리드**로 모으는 단일 파일 독서 기록 웹앱입니다.
 `index.html` 하나에 HTML·CSS·JavaScript가 모두 들어 있어, 인터넷 없이도 그대로 동작하고 외부 CDN이나 서버가 필요 없습니다.
