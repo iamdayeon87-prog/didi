@@ -58,9 +58,10 @@ window.runUiTests = async function (frame, t, sleep) {
 
   function setValue(sel, value) {
     var el = q(sel);
+    var Ev = W().Event;
     el.value = value;
-    el.dispatchEvent(new W().Event('input', { bubbles: true }));
-    el.dispatchEvent(new W().Event('change', { bubbles: true }));
+    el.dispatchEvent(new Ev('input', { bubbles: true }));
+    el.dispatchEvent(new Ev('change', { bubbles: true }));
   }
 
   async function fillBook(data) {
