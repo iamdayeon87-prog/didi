@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>나의 서재 · 테스트</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+    margin:0;padding:22px;background:#F6F3EC;color:#23211D;}
+  h1{font-size:18px;margin:0 0 4px;}
+  .sub{font-size:12px;color:#8A8175;margin-bottom:16px;}
+  #summary{font-size:15px;font-weight:800;padding:14px 16px;border-radius:12px;background:#fff;
+    border:1px solid #E4DED1;margin-bottom:14px;}
+  #summary.pass{background:#E8EFE8;border-color:#BFD5C5;color:#2D5A43;}
+  #summary.fail{background:#FBEBE8;border-color:#EBC7C0;color:#A8443A;}
+  ol{margin:0;padding-left:0;list-style:none;font-size:12.5px;line-height:1.7;}
+  li{padding:2px 0;font-variant-numeric:tabular-nums;}
+  li .mark{display:inline-block;width:16px;font-weight:800;}
+  li.p{color:#5E584F;}
+  li.p .mark{color:#3E7057;}
+  li.f{color:#A8443A;font-weight:700;}
+  .det{color:#8A8175;font-weight:400;}
+  .group{margin:16px 0 6px;font-size:12px;font-weight:800;color:#8A8175;letter-spacing:.4px;}
+  iframe{width:390px;height:760px;border:0;position:fixed;right:16px;top:22px;border-radius:22px;
+    box-shadow:0 12px 40px rgba(35,33,29,.18);background:#FAF8F4;}
+  body{max-width:calc(100% - 430px);}
+</style>
+</head>
+<body>
+<h1>나의 서재 — 자동 테스트</h1>
+<p class="sub">index.html의 코어 로직 + 화면 동작 + PWA 설정을 검사합니다.</p>
+<div id="summary">실행 중…</div>
+<ol id="list"></ol>
+<iframe id="app" src="../index.html" width="390" height="760"></iframe>
+
+<script>
+(function () {
+  'use strict';
+  var results = [];
+  var group = '';
+
+  function add(pass, name, detail) {
+    results.push({ group: group, name: name, pass: !!pass, detail: pass ? '' : String(detail || '') });
+  }
+  var t = {
+    ok: function (cond, name, detail) { add(cond, name, detail); },
+    eq: function (actual, expected, name) {
+      var pass = actual === expected;
+      add(pass, name, pass ? '' : ('기대: ' + JSON.stringify(expected) + ' / 실제: ' + JSON.stringify(actual)));
+    }
+  };
+  window.__RESULTS__ = results;
+  window.__DONE__ = false;
+  window.__SECTIONS__ = {};
+
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function between(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  function render() {
+    var pass = results.filter(function (r) { return r.pass; }).length;
+    var fail = results.length - pass;
+    var sum = document.getElementById('summary');
+    sum.className = fail ? 'fail' : 'pass';
+    sum.textContent = (fail ? '실패 ' + fail + '건 / ' : '모두 통과 · ') + '총 ' + results.length + '개 검사 (통과 ' + pass + ')'
+      + (window.__DONE__ ? '' : ' · 실행 중…');
+    var out = '';
+    var lastGroup = null;
+    results.forEach(function (r) {
+      if (r.group !== lastGroup) {
+        out += '<li class="group">' + r.group + '</li>';
+        lastGroup = r.group;
+      }
+      out += '<li class="' + (r.pass ? 'p' : 'f') + '"><span class="mark">' + (r.pass ? '✓' : '✗') + '</span>' + r.name +
+        (r.detail ? '<span class="det"> — ' + r.detail + '</span>' : '') + '</li>';
+    });
+    document.getElementById('list').innerHTML = out;
+  }
+
+  function extractScript(html, id) {
+    var startTag = '<script id="' + id + '">';
+    var i = html.indexOf(startTag);
+    if (i < 0) return null;
+    var start = i + startTag.length;
+    var end = html.indexOf('<\/script>', start);
+    if (end < 0) return null;
+    return html.slice(start, end);
+  }
+
+  async function main() {
+    group = '1. 파일 · 문법';
+    var html = await (await fetch('../index.html', { cache: 'no-store' })).text();
+    t.ok(html.length > 10000, 'index.html 크기 확인');
+    t.ok(html.indexOf('my_reading_log_v1') >= 0, 'localStorage 키 포함');
+    t.ok(html.indexOf('FAF8F4') >= 0 && html.indexOf('2D5A43') >= 0, '지정 색상(아이보리/포레스트) 사용');
+
+    var coreSrc = extractScript(html, 'reading-core');
+    var uiSrc = extractScript(html, 'reading-ui');
+    t.ok(!!coreSrc, '코어 스크립트 추출');
+    t.ok(!!uiSrc, 'UI 스크립트 추출');
+
+    var core = null;
+    try {
+      // 문법 검사(파싱) — new Function은 SyntaxError를 즉시 던진다
+      new Function(coreSrc);
+      t.ok(true, '코어 스크립트 문법 검사');
+    } catch (e) {
+      t.ok(false, '코어 스크립트 문법 검사', e.message);
+    }
+    try {
+      new Function(uiSrc);
+      t.ok(true, 'UI 스크립트 문법 검사');
+    } catch (e) {
+      t.ok(false, 'UI 스크립트 문법 검사', e.message);
+    }
+
+    try {
+      var sandbox = {};
+      new Function('window', coreSrc)(sandbox);
+      core = sandbox.ReadingCore;
+      t.ok(!!core, '코어 모듈 로드');
+    } catch (e) {
+      t.ok(false, '코어 모듈 로드', e.message);
+    }
+    render();
+
+    if (core) {
+      group = '2. 코어 로직';
+      try {
+        window.runCoreTests(core, t);
+      } catch (e) {
+        t.ok(false, '코어 테스트 실행', e.message + ' @ ' + (e.stack || '').split('\n')[1]);
+      }
+      render();
+    }
+
+    group = '3. 화면 동작 (iframe)';
+    try {
+      await window.runUiTests(document.getElementById('app'), t, sleep);
+    } catch (e) {
+      t.ok(false, '화면 테스트 실행', e.message + ' @ ' + (e.stack || '').split('\n')[1]);
+    }
+    render();
+
+    window.__DONE__ = true;
+    render();
+  }
+
+  window.addEventListener('load', function () {
+    main().catch(function (e) {
+      group = '예외';
+      t.ok(false, '테스트 실행 중 예외', e.message);
+      window.__DONE__ = true;
+      render();
+    });
+  });
+})();
+</script>
+<script src="./core.test.js"></script>
+<script src="./ui.test.js"></script>
+</body>
+</html>
