@@ -1234,6 +1234,10 @@
     }
     state.books = parsed.books;
     state.goals = parsed.goals;
+    try {
+      var meta = JSON.parse(raw);
+      if (meta && typeof meta.exportedAt === 'string') state.lastSavedAt = meta.exportedAt;
+    } catch (e) {}
   }
 
   function save() {
@@ -1471,7 +1475,7 @@
     $('stat-grid').innerHTML =
       statCard(state.statsYear === THIS_YEAR ? '올해 총 권수' : state.statsYear + '년 총 권수', agg.total, '권', agg.total ? agg.activeMonths + '개월 기록' : '아직 기록이 없어요') +
       statCard('월 평균', agg.total ? agg.monthlyAvg.toFixed(1) : '0.0', '권', '12개월 기준') +
-      statCard('평균 별점', agg.ratedCount ? agg.avgRating.toFixed(1) : '—', agg.ratedCount ? '/ 5' : '', agg.ratedCount + '권에 별점') +
+      statCard('평균 별점', agg.ratedCount ? agg.avgRating.toFixed(1) : '—', agg.ratedCount ? ' / 5' : '', agg.ratedCount + '권에 별점') +
       statCard('가장 많이 읽은 달', bestLabel, '', agg.bestMonth ? agg.bestMonthCount + '권' : '기록 없음');
 
     /* 목표 */
