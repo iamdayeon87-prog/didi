@@ -54,7 +54,8 @@ window.runUiTests = async function (frame, t, sleep) {
   t.eq(q('meta[name="apple-mobile-web-app-title"]').getAttribute('content'), '나의 서재', 'PWA: 홈 화면 이름');
   t.eq(q('meta[name="apple-mobile-web-app-capable"]').getAttribute('content'), 'yes', 'PWA: standalone');
   t.ok(q('meta[name="viewport"]').getAttribute('content').indexOf('viewport-fit=cover') >= 0, 'PWA: viewport-fit=cover');
-  t.ok((q('link[rel="apple-touch-icon"]').getAttribute('href') || '').indexOf('data:image/svg+xml') === 0, 'PWA: 인라인 SVG 아이콘');
+  t.ok((q('link[rel="apple-touch-icon"]').getAttribute('href') || '').indexOf('data:image/png;base64,') === 0, 'PWA: 인라인 아이콘(apple-touch-icon PNG)');
+  t.ok((q('link[rel="icon"]').getAttribute('href') || '').indexOf('data:image/svg+xml') === 0, 'PWA: 인라인 SVG 파비콘');
   t.ok((q('link[rel="manifest"]').getAttribute('href') || '').indexOf('data:application/manifest+json') === 0, 'PWA: 인라인 매니페스트');
   t.eq(qa('script[src], link[href^="http"], img[src^="http"]').length, 0, '외부 리소스 의존 없음 (단일 파일)');
 
@@ -115,12 +116,10 @@ window.runUiTests = async function (frame, t, sleep) {
   yearSel.value = yearOpts[1];
   yearSel.dispatchEvent(new (W().Event)('change', { bubbles: true }));
   await sleep(60);
-  t.eq(cardaCountAfterYear(cards()), cards().length, '연도 필터 적용');
+  t.eq(cards().length, 3, '연도 필터: 해당 연도 3권만');
   yearSel.value = 'all';
   yearSel.dispatchEvent(new (W().Event)('change', { bubbles: true }));
   await sleep(60);
-
-  function cardaCountAfterYear(c) { return c.length; }
 
   /* ── 추가 ── */
   await openAdd();
@@ -182,7 +181,7 @@ window.runUiTests = async function (frame, t, sleep) {
   xssCard.click();
   await sleep(120);
   t.eq(D().querySelectorAll('#detail-body img').length, 0, 'XSS: 상세 화면도 이스케이프');
-  q('[data-close]').click();
+  q('#sheet-detail [data-close]').click();
   await sleep(120);
 
   /* ── 통계 탭 ── */
@@ -280,7 +279,7 @@ window.runUiTests = async function (frame, t, sleep) {
   t.eq(cards().length, 2, '가져오기: 깨진 JSON은 무시');
 
   /* ── 예시 지우기 / 전체 초기화 ── */
-  q('[data-close]').click();
+  q('#sheet-settings [data-close]').click();
   await sleep(120);
   q('#open-settings').click();
   await sleep(110);
