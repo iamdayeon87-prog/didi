@@ -81,7 +81,11 @@
     flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;
     -webkit-overflow-scrolling:touch;
     padding:4px 18px 30px;
+    scrollbar-width:thin;scrollbar-color:#DDD5C6 transparent;
   }
+  .content::-webkit-scrollbar{width:6px;}
+  .content::-webkit-scrollbar-thumb{background:#E2DBCC;border-radius:99px;}
+  .content::-webkit-scrollbar-track{background:transparent;}
   .view{display:none;}
   .view.is-active{display:block;animation:fade .2s ease;}
   @keyframes fade{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:none;}}
@@ -347,9 +351,10 @@
     position:fixed;inset:0;z-index:70;
     display:flex;align-items:flex-end;justify-content:center;
     background:rgba(30,28,24,.42);
-    opacity:0;pointer-events:none;transition:opacity .22s ease;
+    opacity:0;pointer-events:none;visibility:hidden;
+    transition:opacity .22s ease, visibility .22s ease;
   }
-  .sheet-wrap.open{opacity:1;pointer-events:auto;}
+  .sheet-wrap.open{opacity:1;pointer-events:auto;visibility:visible;}
   .sheet{
     width:100%;max-width:480px;max-height:92vh;max-height:92dvh;
     background:var(--paper);border-radius:24px 24px 0 0;
@@ -570,13 +575,13 @@
   </main>
 
   <nav class="tabbar" aria-label="주요 메뉴">
-    <button class="tab is-active" id="tab-library" type="button" data-tab="library" aria-current="page">
+    <button class="tab is-active" id="tab-library" type="button" data-tab="library" aria-label="내 서재" aria-current="page">
       <span class="tab-icon">
         <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v15H6.5A2.5 2.5 0 0 0 4 20.5z"></path><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H19v3H6.5A2.5 2.5 0 0 1 4 20.5z"></path></svg>
       </span>
       내 서재
     </button>
-    <button class="tab" id="tab-stats" type="button" data-tab="stats">
+    <button class="tab" id="tab-stats" type="button" data-tab="stats" aria-label="월별 통계">
       <span class="tab-icon">
         <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4"></path><path d="M4 20h16"></path><rect x="7" y="12" width="3.2" height="5"></rect><rect x="12.4" y="8" width="3.2" height="9"></rect><rect x="17.8" y="5" width="3.2" height="12"></rect></svg>
       </span>
