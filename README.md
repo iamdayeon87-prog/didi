@@ -19,7 +19,10 @@
 
 배포 위치: GitHub (`didi` 저장소, `main` 브랜치 루트)
 
-1. Safari로 배포 주소(예: `https://raw.githack.com/iamdayeon87-prog/didi/main/index.html`)를 엽니다.
+1. Safari로 배포 주소를 엽니다.
+   - 저장소 미리보기: `https://raw.githack.com/iamdayeon87-prog/didi/main/index.html`
+   - GitHub Pages(켜져 있을 때): `https://iamdayeon87-prog.github.io/didi/`
+     ※ Pages는 저장소 Settings → Pages에서 브랜치를 `main` / `/ (root)`로 지정하면 켜집니다. 꺼져 있으면 주소가 404입니다.
 2. 하단 **공유** 버튼 → **홈 화면에 추가** → 이름을 확인하고 **추가**.
 3. 홈 화면 아이콘으로 열면 브라우저 주소창 없이 앱처럼 실행됩니다.
 
