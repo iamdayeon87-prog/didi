@@ -13,8 +13,10 @@
 
 ## 아이폰에서 홈 화면에 추가
 
+배포 위치: GitHub Pages (`didi` 저장소, `main` 브랜치 루트)
+
 1. Safari로 아래 주소를 엽니다.
-   `https://iamdayeon87-prog.github.io/my-reading-log/`
+   `https://iamdayeon87-prog.github.io/didi/`
 2. 하단 **공유** 버튼 → **홈 화면에 추가** → 이름을 확인하고 **추가**.
 3. 홈 화면 아이콘으로 열면 브라우저 주소창 없이 앱처럼 실행됩니다.
 
