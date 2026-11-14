@@ -11,6 +11,9 @@ window.runUiTests = async function (frame, t, sleep) {
   function txt(el) { return (el && el.textContent || '').replace(/\s+/g, ' ').trim(); }
   function cells() { return qa('#lib-grid .cell'); }
   function titles() { return qa('#lib-grid .cell-title').map(function (e) { return txt(e); }); }
+  function cellByTitle(title) {
+    return cells().filter(function (c) { return txt(c.querySelector('.cell-title')) === title; })[0];
+  }
   function stored() {
     try { return JSON.parse(W().localStorage.getItem(KEY) || 'null'); } catch (e) { return null; }
   }
@@ -199,7 +202,8 @@ window.runUiTests = async function (frame, t, sleep) {
   await sleep(100);
 
   /* ── 9. 수정 ── */
-  q('#lib-grid .cell').click();
+  t.ok(!!cellByTitle('표지 테스트'), '표지 테스트 카드 존재');
+  cellByTitle('표지 테스트').click();
   await sleep(150);
   t.ok(!!q('#sheet-detail.open'), '카드 → 상세 시트');
   t.eq(txt(q('#detail-title')), '표지 테스트', '상세 제목');
@@ -209,15 +213,17 @@ window.runUiTests = async function (frame, t, sleep) {
   t.eq(q('#f-title').value, '표지 테스트', '수정 시트에 기존 값');
   setValue('#f-title', '듄');
   await saveBook();
-  t.eq(titles()[0], '듄', '제목 수정 반영');
+  t.ok(titles().indexOf('듄') > -1, '제목 수정 반영');
+  t.eq((stored().books.filter(function (b) { return b.title === '듄'; })[0] || {}).cover.kind, 'url', '수정해도 표지 유지');
   t.eq(stored().books.filter(function (b) { return b.title === '듄'; }).length, 1, '수정 결과 저장');
 
   /* ── 10. 삭제 ── */
-  q('#lib-grid .cell').click();
+  cellByTitle('듄').click();
   await sleep(150);
   q('#detail-delete').click();
   await sleep(200);
   t.eq(cells().length, 2, '삭제 후 카드 수 감소');
+  t.eq(titles().indexOf('듄'), -1, '삭제한 책이 사라짐');
   t.eq((stored() || {}).books.length, 2, '삭제 결과 저장');
 
   /* ── 11. 백업 / 초기화 ── */
